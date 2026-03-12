@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import { prisma } from './config/database.js';
 import { authMiddleware } from './middleware/auth.js';
 import { runDueSchedules } from './services/scheduler/keyword-scheduler.service.js';
 import { runScheduledPublications } from './services/scheduler/cron.js';
@@ -25,17 +24,9 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
-// Diagnostic endpoints (temporaire)
+// Diagnostic endpoint (temporaire)
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, node: process.version, env: process.env.NODE_ENV });
-});
-app.get('/api/health/db', async (_req, res) => {
-  try {
-    await prisma.$queryRaw`SELECT 1`;
-    res.json({ ok: true });
-  } catch (err) {
-    res.status(500).json({ error: (err as Error).message, stack: (err as Error).stack?.split('\n').slice(0, 5) });
-  }
 });
 
 // Public routes
