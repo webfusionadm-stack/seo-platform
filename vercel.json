@@ -1,6 +1,6 @@
 {
   "framework": null,
-  "buildCommand": "npm ci && npm run build -w packages/shared && npm run build -w apps/frontend",
+  "buildCommand": "npm ci && npm run build -w @seo-platform/shared && npm run build -w @seo-platform/frontend",
   "outputDirectory": "apps/frontend/dist",
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/index" },
