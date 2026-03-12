@@ -1,0 +1,18 @@
+{
+  "buildCommand": "npm ci && npm run build",
+  "outputDirectory": "apps/frontend/dist",
+  "rewrites": [
+    { "source": "/api/:path*", "destination": "/api/index" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "crons": [
+    { "path": "/api/cron/keyword-schedules", "schedule": "* * * * *" },
+    { "path": "/api/cron/publications", "schedule": "* * * * *" }
+  ],
+  "functions": {
+    "api/index.ts": {
+      "maxDuration": 60,
+      "includeFiles": "apps/backend/prisma/schema.prisma"
+    }
+  }
+}

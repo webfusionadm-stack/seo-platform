@@ -6,7 +6,7 @@ import { publishArticleById } from '../wordpress/publish.service.js';
 
 const MAX_PUBLISH_RETRIES = 5;
 
-async function runScheduledPublications(): Promise<void> {
+export async function runScheduledPublications(): Promise<void> {
   const articles = await prisma.article.findMany({
     where: {
       status: 'SCHEDULED',
