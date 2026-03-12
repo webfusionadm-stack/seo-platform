@@ -24,9 +24,26 @@ app.use(helmet());
 app.use(cors());
 app.use(express.json({ limit: '5mb' }));
 
-// Diagnostic endpoint (temporaire)
+// Diagnostic endpoints (temporaire)
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, node: process.version, env: process.env.NODE_ENV });
+});
+app.get('/api/health/db', async (_req, res) => {
+  const dbUrl = process.env.DATABASE_URL;
+  if (!dbUrl) {
+    res.status(500).json({ error: 'DATABASE_URL MANQUANTE dans les variables Vercel' });
+    return;
+  }
+  try {
+    const { prisma } = await import('./config/database.js');
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ ok: true, db: 'connectée' });
+  } catch (err) {
+    res.status(500).json({
+      error: (err as Error).message?.substring(0, 500),
+      DATABASE_URL: 'définie (commence par ' + dbUrl.substring(0, 25) + '...)',
+    });
+  }
 });
 
 // Public routes
