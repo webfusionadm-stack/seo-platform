@@ -6,8 +6,8 @@
     { "source": "/(.*)", "destination": "/index.html" }
   ],
   "crons": [
-    { "path": "/api/cron/keyword-schedules", "schedule": "* * * * *" },
-    { "path": "/api/cron/publications", "schedule": "* * * * *" }
+    { "path": "/api/cron/keyword-schedules", "schedule": "0 0 * * *" },
+    { "path": "/api/cron/publications", "schedule": "0 0 * * *" }
   ],
   "functions": {
     "api/index.ts": {
