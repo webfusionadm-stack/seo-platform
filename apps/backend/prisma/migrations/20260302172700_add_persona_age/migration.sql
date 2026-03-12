@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "personas" ADD COLUMN     "age" INTEGER NOT NULL DEFAULT 30,
+ALTER COLUMN "writingStyle" SET DEFAULT '';

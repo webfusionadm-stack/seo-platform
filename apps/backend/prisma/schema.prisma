@@ -1,0 +1,192 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  email        String    @unique
+  passwordHash String
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  personas Persona[]
+
+  @@map("users")
+}
+
+model Persona {
+  id                     String   @id @default(uuid())
+  name                   String
+  age                    Int      @default(30)
+  tone                   String   @default("conversationnel")
+  theme                  String   @default("généraliste")
+  writingStyle           String   @db.Text @default("")
+  vocabulary             String   @db.Text @default("")
+  anecdoteType           String   @db.Text @default("")
+  formalityLevel         String   @default("semi-formel")
+  recurringExpressions   String   @db.Text @default("")
+  additionalInstructions String   @db.Text @default("")
+  userId                 String
+  user                   User     @relation(fields: [userId], references: [id])
+  sites                  Site[]
+  createdAt              DateTime @default(now())
+  updatedAt              DateTime @updatedAt
+
+  @@map("personas")
+}
+
+model Site {
+  id                  String   @id @default(uuid())
+  name                String
+  url                 String
+  domain              String
+  da                  Int?
+  dr                  Int?
+  theme               String?
+  status              String   @default("ACTIVE")
+  wpUrl               String?
+  wpUsername           String?
+  wpAppPasswordEnc    String?
+  wpConnected         Boolean  @default(false)
+  personaId           String?
+  persona             Persona? @relation(fields: [personaId], references: [id], onDelete: SetNull)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  articles         Article[]
+  orders           Order[]
+  revenues         Revenue[]
+  keywordSchedules KeywordSchedule[]
+
+  @@map("sites")
+}
+
+model Article {
+  id              String   @id @default(uuid())
+  title           String
+  slug            String
+  content         String   @default("")
+  keyword         String?
+  category        String?
+  wordCount       Int      @default(0)
+  type            String   @default("SEO_CONTENT")
+  status          String   @default("DRAFT")
+  metaTitle       String?
+  metaDescription  String?
+  featuredImageUrl String?
+  featuredImageAlt String?
+  wpPostId         Int?
+  wpPostUrl            String?
+  scheduledPublishAt   DateTime?
+  publishError         String?
+  publishRetryCount    Int       @default(0)
+  lastPublishAt        DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  siteId  String
+  site    Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  orderId String?  @unique
+  order   Order?   @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  generation       ArticleGeneration?
+  scheduledKeyword KeywordSchedule?
+
+  @@map("articles")
+}
+
+model ArticleGeneration {
+  id        String   @id @default(uuid())
+  articleId String   @unique
+  article   Article  @relation(fields: [articleId], references: [id], onDelete: Cascade)
+
+  keyword           String
+  secondaryKeywords String[]  @default([])
+  siteId            String
+  language          String    @default("fr")
+  wordCount         Int       @default(1200)
+  tone              String    @default("professionnel")
+
+  status       String   @default("RUNNING")
+  currentStep  Int      @default(0)
+  failedStep   Int?
+  errorMessage String?
+
+  serpData        Json?
+  intentAnalysis  Json?
+  metadata        Json?
+  h2Structure     Json?
+  articleMarkdown String?
+  faqHtml         String?
+  finalHtml        String?
+  featuredImageUrl String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@map("article_generations")
+}
+
+model Order {
+  id          String   @id @default(uuid())
+  clientName  String
+  clientEmail String?
+  clientUrl   String
+  anchorText  String
+  brief       String?
+  price       Float
+  currency    String   @default("EUR")
+  status      String   @default("PENDING")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  siteId String
+  site   Site @relation(fields: [siteId], references: [id], onDelete: Cascade)
+
+  article  Article?
+  revenues Revenue[]
+
+  @@map("orders")
+}
+
+model Revenue {
+  id          String   @id @default(uuid())
+  amount      Float
+  currency    String   @default("EUR")
+  type        String
+  description String?
+  date        DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  siteId  String
+  site    Site   @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  orderId String?
+  order   Order? @relation(fields: [orderId], references: [id], onDelete: SetNull)
+
+  @@map("revenues")
+}
+
+model KeywordSchedule {
+  id             String   @id @default(uuid())
+  keyword        String
+  category       String?
+  siteId         String
+  site           Site     @relation(fields: [siteId], references: [id], onDelete: Cascade)
+  language       String   @default("fr")
+  wordCount      Int      @default(1200)
+  tone           String   @default("professionnel")
+  scheduledAt    DateTime
+  articlesPerDay Int      @default(1)
+  status         String   @default("PENDING")
+  articleId      String?  @unique
+  article        Article? @relation(fields: [articleId], references: [id], onDelete: SetNull)
+  errorMessage   String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@map("keyword_schedules")
+}
