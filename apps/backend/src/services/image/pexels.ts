@@ -1,4 +1,3 @@
-import sharp from 'sharp';
 import { writeFile, mkdir } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -64,17 +63,24 @@ export async function searchAndDownloadImage(
 
     const imageBuffer = Buffer.from(await imageRes.arrayBuffer());
 
-    // 3. Resize with sharp
-    const resizedBuffer = await sharp(imageBuffer)
-      .resize(1200, 500, { fit: 'cover' })
-      .jpeg({ quality: 85 })
-      .toBuffer();
+    // 3. Resize with sharp si disponible (non disponible en environnement serverless)
+    let finalBuffer: Buffer = imageBuffer;
+    try {
+      const { default: sharp } = await import('sharp');
+      finalBuffer = await sharp(imageBuffer)
+        .resize(1200, 500, { fit: 'cover' })
+        .jpeg({ quality: 85 })
+        .toBuffer();
+    } catch {
+      logger.warn('sharp non disponible, image sauvegardée sans redimensionnement');
+    }
 
     // 4. Save to uploads directory
-    await mkdir(UPLOADS_DIR, { recursive: true });
+    const uploadsDir = process.env.NODE_ENV === 'production' ? '/tmp/uploads' : UPLOADS_DIR;
+    await mkdir(uploadsDir, { recursive: true });
     const filename = `${articleId}.jpg`;
-    const outputPath = join(UPLOADS_DIR, filename);
-    await writeFile(outputPath, resizedBuffer);
+    const outputPath = join(uploadsDir, filename);
+    await writeFile(outputPath, finalBuffer);
 
     logger.info(`Image mise en avant sauvegardée: ${filename}`);
 

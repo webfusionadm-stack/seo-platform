@@ -1,5 +1,4 @@
 import Replicate from 'replicate';
-import sharp from 'sharp';
 import { writeFile, mkdir } from 'fs/promises';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -55,16 +54,23 @@ export async function generateAndDownloadImage(
 
     const imageBuffer = Buffer.from(await imageRes.arrayBuffer());
 
-    // Resize 1200x630 (format 16:9 classique pour featured images)
-    const resizedBuffer = await sharp(imageBuffer)
-      .resize(1200, 630, { fit: 'cover' })
-      .jpeg({ quality: 85 })
-      .toBuffer();
+    // Resize 1200x630 si sharp disponible (non disponible en environnement serverless)
+    let finalBuffer: Buffer = imageBuffer;
+    try {
+      const { default: sharp } = await import('sharp');
+      finalBuffer = await sharp(imageBuffer)
+        .resize(1200, 630, { fit: 'cover' })
+        .jpeg({ quality: 85 })
+        .toBuffer();
+    } catch {
+      logger.warn('sharp non disponible, image sauvegardée sans redimensionnement');
+    }
 
-    await mkdir(UPLOADS_DIR, { recursive: true });
+    const uploadsDir = process.env.NODE_ENV === 'production' ? '/tmp/uploads' : UPLOADS_DIR;
+    await mkdir(uploadsDir, { recursive: true });
     const filename = `${articleId}.jpg`;
-    const outputPath = join(UPLOADS_DIR, filename);
-    await writeFile(outputPath, resizedBuffer);
+    const outputPath = join(uploadsDir, filename);
+    await writeFile(outputPath, finalBuffer);
 
     logger.info(`Image Flux sauvegardée: ${filename}`);
 

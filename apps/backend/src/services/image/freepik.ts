@@ -1,8 +1,7 @@
 import { env } from '../../config/env.js';
 import { logger } from '../../utils/logger.js';
 import type { FreepikImageProposal } from '@seo-platform/shared';
-import sharp from 'sharp';
-import fs from 'fs';
+import { writeFileSync, existsSync, mkdirSync } from 'fs';
 import path from 'path';
 
 const FREEPIK_BASE = 'https://api.freepik.com/v1';
@@ -110,17 +109,25 @@ export async function downloadFreepikImage(
   const buffer = Buffer.from(await imageRes.arrayBuffer());
 
   // Resize to 1200x630 and save as JPEG
-  const uploadsDir = path.join(import.meta.dirname, '../../../../uploads');
-  if (!fs.existsSync(uploadsDir)) {
-    fs.mkdirSync(uploadsDir, { recursive: true });
+  const uploadsDir = process.env.NODE_ENV === 'production'
+    ? '/tmp/uploads'
+    : path.join(import.meta.dirname, '../../../../uploads');
+  if (!existsSync(uploadsDir)) {
+    mkdirSync(uploadsDir, { recursive: true });
   }
 
   const outputPath = path.join(uploadsDir, `${articleId}.jpg`);
 
-  await sharp(buffer)
-    .resize(1200, 630, { fit: 'cover' })
-    .jpeg({ quality: 85 })
-    .toFile(outputPath);
+  try {
+    const { default: sharp } = await import('sharp');
+    await sharp(buffer)
+      .resize(1200, 630, { fit: 'cover' })
+      .jpeg({ quality: 85 })
+      .toFile(outputPath);
+  } catch {
+    logger.warn('sharp non disponible, image sauvegardée sans redimensionnement');
+    writeFileSync(outputPath, buffer);
+  }
 
   const cacheBuster = Date.now();
   logger.info(`Freepik image saved: /uploads/${articleId}.jpg`);
